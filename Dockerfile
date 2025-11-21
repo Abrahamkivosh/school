@@ -1,24 +1,21 @@
-# Specify the base image
 FROM node:20-alpine
-WORKDIR /app
-COPY package*.json ./
 
-RUN npm install -g yarn --force
-RUN yarn 
+WORKDIR /app
+
+# Copy package files
+COPY package.json pnpm-lock.yaml ./
+
+# Install pnpm and dependencies
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
+
+# Copy source code
 COPY . .
 
-# install application dependencies
-RUN yarn install
+# Build the application
+RUN pnpm build
 
-RUN yarn build
-
-#Runtime stage installes nodejs to make the container smaller
-FROM alpine:3.20
-RUN apk update && apk add --no-cache nodejs
-RUN addgroup -S node && adduser -S node -G node
-USER node
-RUN mkdir /home/node/code && chown -R node:node /home/node/code
-WORKDIR /home/node/code
-COPY --from=0 /app/package*.json ./
+# Expose port
 EXPOSE 3000
-CMD ["sh", "-c", "yarn install && yarn preview"]
+
+# Start the preview server
+CMD ["pnpm", "preview", "--host", "0.0.0.0"]
